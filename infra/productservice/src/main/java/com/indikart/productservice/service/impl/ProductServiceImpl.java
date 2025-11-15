@@ -45,7 +45,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse getProductById(Long id) {
-       Product found= productRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Product not found with id:-"+id));
+       Product found= productRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Product not found with id:"+id));
         return modelMapper.map(found, ProductResponse.class);
     }
 
@@ -65,7 +65,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public void deleteProduct(Long id) {
+        Product found=productRepository.findById(id).orElseThrow(()->new ResourceNotFoundException("Product not found with id:->"+id));
         productRepository.deleteById(id);
-
     }
 }

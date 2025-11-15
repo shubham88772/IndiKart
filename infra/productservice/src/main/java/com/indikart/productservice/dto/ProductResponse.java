@@ -19,4 +19,6 @@ public class ProductResponse {
     private Integer quantity;
 
     private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 }
