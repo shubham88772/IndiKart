@@ -6,6 +6,7 @@ import com.indikart.orderservice.dto.external.InventoryResponse;
 import com.indikart.orderservice.dto.external.ProductResponse;
 import com.indikart.orderservice.dto.request.CreateOrderRequest;
 import com.indikart.orderservice.dto.request.OrderItemRequest;
+import com.indikart.orderservice.dto.response.ApiResponse;
 import com.indikart.orderservice.dto.response.OrderResponse;
 import com.indikart.orderservice.entity.Order;
 import com.indikart.orderservice.entity.OrderItem;
@@ -46,20 +47,45 @@ public class OrderServiceImpl implements OrderService {
             }
         });
 
-        // 2) Validate inventory (stock check)
+//        // 2) Validate inventory (stock check)
+//        request.getItems().forEach(item -> {
+//            InventoryResponse inventory = inventoryClient.getInventoryByProductId(item.getProductId());
+//
+//            if (inventory == null) {
+//                throw new ResourceNotFoundException("Inventory not found for productId: " + item.getProductId());
+//            }
+//
+//            if (inventory.getAvailableQuantity() < item.getQuantity()) {
+//                throw new IllegalArgumentException(
+//                        "Insufficient stock for productId: " + item.getProductId()
+//                );
+//            }
+//        });
+        // 2) Validate inventory (stock check) — null-safe
         request.getItems().forEach(item -> {
-            InventoryResponse inventory = inventoryClient.getInventoryByProductId(item.getProductId());
+            ApiResponse<InventoryResponse> response =
+                    inventoryClient.getInventoryByProductId(item.getProductId());
+
+            InventoryResponse inventory = response.getData();
+
 
             if (inventory == null) {
                 throw new ResourceNotFoundException("Inventory not found for productId: " + item.getProductId());
             }
 
-            if (inventory.getAvailableQuantity() < item.getQuantity()) {
+            Integer available = inventory.getAvailableQuantity();
+            if (available == null) {
+                throw new IllegalStateException(
+                        "Inventory record for productId " + item.getProductId() + " has null availableQuantity");
+            }
+
+            if (available < item.getQuantity()) {
                 throw new IllegalArgumentException(
                         "Insufficient stock for productId: " + item.getProductId()
                 );
             }
         });
+
 
         // 3) Calculate total amount
         BigDecimal totalAmount = request.getItems().stream()

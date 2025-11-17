@@ -74,4 +74,13 @@ public class InventoryServiceImpl implements InventoryService {
         }
         inventoryRepository.deleteById(id);
     }
+    @Override
+    public InventoryResponse getByProductId(Long productId) {
+
+        Inventory inv = inventoryRepository.findByProductId(productId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Inventory not found for productId: " + productId));
+
+        return modelMapper.map(inv, InventoryResponse.class);
+    }
 }

@@ -19,6 +19,7 @@ public class Inventory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long productId;
+    @Column(name = "available_quantity", nullable = false)
     private int availableQuantity;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
