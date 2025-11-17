@@ -1,5 +1,9 @@
 package com.indikart.orderservice.service.impl;
 
+import com.indikart.orderservice.client.InventoryClient;
+import com.indikart.orderservice.client.ProductClient;
+import com.indikart.orderservice.dto.external.InventoryResponse;
+import com.indikart.orderservice.dto.external.ProductResponse;
 import com.indikart.orderservice.dto.request.CreateOrderRequest;
 import com.indikart.orderservice.dto.request.OrderItemRequest;
 import com.indikart.orderservice.dto.response.OrderResponse;
@@ -26,16 +30,43 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final ModelMapper modelMapper;
 
+    // NEW: Feign clients
+    private final ProductClient productClient;
+    private final InventoryClient inventoryClient;
+
     @Override
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
 
-        // Total amount calculation
+        // 1) Validate each product using Product Service
+        request.getItems().forEach(item -> {
+            ProductResponse product = productClient.getProduct(item.getProductId());
+            if (product == null) {
+                throw new ResourceNotFoundException("Product not found with id: " + item.getProductId());
+            }
+        });
+
+        // 2) Validate inventory (stock check)
+        request.getItems().forEach(item -> {
+            InventoryResponse inventory = inventoryClient.getInventoryByProductId(item.getProductId());
+
+            if (inventory == null) {
+                throw new ResourceNotFoundException("Inventory not found for productId: " + item.getProductId());
+            }
+
+            if (inventory.getAvailableQuantity() < item.getQuantity()) {
+                throw new IllegalArgumentException(
+                        "Insufficient stock for productId: " + item.getProductId()
+                );
+            }
+        });
+
+        // 3) Calculate total amount
         BigDecimal totalAmount = request.getItems().stream()
                 .map(i -> i.getUnitPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Create Order entity
+        // 4) Build Order entity
         Order order = Order.builder()
                 .userId(request.getUserId())
                 .totalAmount(totalAmount)
@@ -44,18 +75,20 @@ public class OrderServiceImpl implements OrderService {
                 .updatedAt(LocalDateTime.now())
                 .build();
 
-        // Create OrderItems
+        // 5) Create OrderItems
         List<OrderItem> items = request.getItems().stream()
-                .map(reqItem -> OrderItem.builder()
-                        .productId(reqItem.getProductId())
-                        .quantity(reqItem.getQuantity())
-                        .unitPrice(reqItem.getUnitPrice())
+                .map(itemReq -> OrderItem.builder()
+                        .productId(itemReq.getProductId())
+                        .quantity(itemReq.getQuantity())
+                        .unitPrice(itemReq.getUnitPrice())
                         .order(order)
-                        .build())
+                        .build()
+                )
                 .collect(Collectors.toList());
 
         order.setItems(items);
 
+        // 6) Save order + items (cascade)
         Order saved = orderRepository.save(order);
 
         return modelMapper.map(saved, OrderResponse.class);
@@ -63,17 +96,19 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderResponse getOrderById(Long id) {
+
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+
         return modelMapper.map(order, OrderResponse.class);
     }
 
     @Override
     public List<OrderResponse> getOrdersByUserId(Long userId) {
+
         return orderRepository.findByUserId(userId)
                 .stream()
                 .map(order -> modelMapper.map(order, OrderResponse.class))
                 .collect(Collectors.toList());
     }
-
 }
