@@ -11,5 +11,7 @@ public interface InventoryService {
     List<InventoryResponse> getAll();
     InventoryResponse update(Long id, InventoryRequest request);
     void delete(Long id);
+    InventoryResponse getByProductId(Long productId);
+
 
 }

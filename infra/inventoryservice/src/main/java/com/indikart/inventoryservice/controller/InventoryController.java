@@ -27,6 +27,13 @@ public class InventoryController {
         InventoryResponse created = inventoryService.create(request);
         return ResponseEntity.ok(new ApiResponse<>(created));
     }
+    @GetMapping("/product/{productId}")
+    @Operation(summary = "Get inventory by productId")
+    public ResponseEntity<ApiResponse<InventoryResponse>> getByProductId(@PathVariable Long productId) {
+        return ResponseEntity.ok(
+                new ApiResponse<>(inventoryService.getByProductId(productId))
+        );
+    }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get inventory record by ID")
