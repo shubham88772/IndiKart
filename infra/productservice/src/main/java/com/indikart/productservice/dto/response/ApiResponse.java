@@ -1,8 +1,7 @@
-package com.indikart.productservice.dto;
+package com.indikart.productservice.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 @Data

@@ -1,7 +1,7 @@
 package com.indikart.productservice.exception;
 
-import com.indikart.productservice.dto.ApiResponse;
-import com.indikart.productservice.dto.ErrorResponse;
+import com.indikart.productservice.dto.response.ApiResponse;
+import com.indikart.productservice.dto.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;

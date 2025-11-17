@@ -1,7 +1,7 @@
 package com.indikart.productservice.service.impl;
 
-import com.indikart.productservice.dto.ProductRequest;
-import com.indikart.productservice.dto.ProductResponse;
+import com.indikart.productservice.dto.request.ProductRequest;
+import com.indikart.productservice.dto.response.ProductResponse;
 import com.indikart.productservice.entity.Product;
 import com.indikart.productservice.exception.ResourceNotFoundException;
 import com.indikart.productservice.repository.ProductRepository;

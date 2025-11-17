@@ -1,7 +1,7 @@
 package com.indikart.productservice.service;
 
-import com.indikart.productservice.dto.ProductRequest;
-import com.indikart.productservice.dto.ProductResponse;
+import com.indikart.productservice.dto.request.ProductRequest;
+import com.indikart.productservice.dto.response.ProductResponse;
 
 import java.util.List;
 

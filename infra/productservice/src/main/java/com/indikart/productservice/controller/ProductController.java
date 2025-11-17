@@ -1,8 +1,8 @@
 package com.indikart.productservice.controller;
 
-import com.indikart.productservice.dto.ApiResponse;
-import com.indikart.productservice.dto.ProductRequest;
-import com.indikart.productservice.dto.ProductResponse;
+import com.indikart.productservice.dto.response.ApiResponse;
+import com.indikart.productservice.dto.request.ProductRequest;
+import com.indikart.productservice.dto.response.ProductResponse;
 import com.indikart.productservice.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

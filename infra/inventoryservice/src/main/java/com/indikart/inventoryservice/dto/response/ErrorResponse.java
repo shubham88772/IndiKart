@@ -1,4 +1,4 @@
-package com.indikart.inventoryservice.dto;
+package com.indikart.inventoryservice.dto.response;
 
 import lombok.Data;
 

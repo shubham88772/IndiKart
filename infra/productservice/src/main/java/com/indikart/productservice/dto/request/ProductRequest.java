@@ -1,4 +1,4 @@
-package com.indikart.productservice.dto;
+package com.indikart.productservice.dto.request;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;

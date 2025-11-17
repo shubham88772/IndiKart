@@ -1,7 +1,7 @@
 package com.indikart.inventoryservice.service.impl;
 
-import com.indikart.inventoryservice.dto.InventoryRequest;
-import com.indikart.inventoryservice.dto.InventoryResponse;
+import com.indikart.inventoryservice.dto.request.InventoryRequest;
+import com.indikart.inventoryservice.dto.response.InventoryResponse;
 import com.indikart.inventoryservice.entity.Inventory;
 import com.indikart.inventoryservice.exception.ResourceNotFoundException;
 import com.indikart.inventoryservice.repository.InventoryRepository;

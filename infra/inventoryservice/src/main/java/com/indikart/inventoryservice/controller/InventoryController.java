@@ -1,8 +1,8 @@
 package com.indikart.inventoryservice.controller;
 
-import com.indikart.inventoryservice.dto.ApiResponse;
-import com.indikart.inventoryservice.dto.InventoryRequest;
-import com.indikart.inventoryservice.dto.InventoryResponse;
+import com.indikart.inventoryservice.dto.response.ApiResponse;
+import com.indikart.inventoryservice.dto.request.InventoryRequest;
+import com.indikart.inventoryservice.dto.response.InventoryResponse;
 import com.indikart.inventoryservice.service.InventoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

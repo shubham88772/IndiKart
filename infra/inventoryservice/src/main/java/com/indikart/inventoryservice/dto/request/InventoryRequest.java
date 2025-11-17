@@ -1,4 +1,4 @@
-package com.indikart.inventoryservice.dto;
+package com.indikart.inventoryservice.dto.request;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;

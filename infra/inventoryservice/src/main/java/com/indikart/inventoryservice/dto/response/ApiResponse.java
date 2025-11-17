@@ -1,4 +1,4 @@
-package com.indikart.inventoryservice.dto;
+package com.indikart.inventoryservice.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,7 +13,8 @@ public class ApiResponse<T> {
     private ErrorResponse error;
     private Instant timestamp = Instant.now();
 
-    public ApiResponse() {}
+    public ApiResponse() {
+    }
 
     public ApiResponse(T data) {
         this.success = true;
