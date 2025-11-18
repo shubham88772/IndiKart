@@ -9,6 +9,16 @@ services:
     volumes:
       - indikart_mysql_data:/var/lib/mysql
     command: --default-authentication-plugin=mysql_native_password
+  redis:
+    image: redis:7.0
+    container_name: indikart-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - indikart_redis_data:/data
+
 
 volumes:
   indikart_mysql_data:
+  indikart_redis_data:
+    driver: local
