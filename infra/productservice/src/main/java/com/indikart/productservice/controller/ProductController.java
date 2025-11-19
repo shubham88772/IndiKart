@@ -1,7 +1,8 @@
 package com.indikart.productservice.controller;
 
-import com.indikart.productservice.dto.response.ApiResponse;
 import com.indikart.productservice.dto.request.ProductRequest;
+import com.indikart.productservice.dto.response.ApiResponse;
+import com.indikart.productservice.dto.response.PagedResponse;
 import com.indikart.productservice.dto.response.ProductResponse;
 import com.indikart.productservice.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,11 +10,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -43,7 +44,9 @@ public class ProductController {
     }
 
     @Operation(summary = "Get product by id")
-    @Cacheable(value = "product-by-id", key = "#id")
+//    @Cacheable(value = "product-by-id", key = "#id")
+//    @Cacheable(value = "product-by-id-v2", key = "#id")
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductResponse>> getById(@PathVariable Long id) {
         ProductResponse resp = productService.getProductById(id);
@@ -72,4 +75,26 @@ public class ProductController {
         productService.deleteProduct(id);
         return ResponseEntity.noContent().build();
     }
+    @GetMapping("/search")
+    @Operation(summary = "Search products with filters, paging & sorting")
+    public ResponseEntity<ApiResponse<PagedResponse<ProductResponse>>> search(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Integer minQty,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction) {
+
+        // FIX: service now returns PagedResponse, not Page<ProductResponse>
+        PagedResponse<ProductResponse> result = productService.searchProducts(
+                name, description, minPrice, maxPrice, minQty, page, size, sortBy, direction
+        );
+
+        return ResponseEntity.ok(new ApiResponse<>(result));
+    }
+
+
 }
