@@ -5,7 +5,6 @@ import com.indikart.orderservice.client.ProductClient;
 import com.indikart.orderservice.dto.external.InventoryResponse;
 import com.indikart.orderservice.dto.external.ProductResponse;
 import com.indikart.orderservice.dto.request.CreateOrderRequest;
-import com.indikart.orderservice.dto.request.OrderItemRequest;
 import com.indikart.orderservice.dto.response.ApiResponse;
 import com.indikart.orderservice.dto.response.OrderResponse;
 import com.indikart.orderservice.entity.Order;
@@ -31,7 +30,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final ModelMapper modelMapper;
 
-    // NEW: Feign clients
+    // Feign Clients
     private final ProductClient productClient;
     private final InventoryClient inventoryClient;
 
@@ -39,60 +38,41 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
 
-        // 1) Validate each product using Product Service
+        // Validate items + fetch product + inventory
         request.getItems().forEach(item -> {
-            ProductResponse product = productClient.getProduct(item.getProductId());
+
+            ApiResponse<ProductResponse> productApi = productClient.getProductById(item.getProductId());
+            ProductResponse product = productApi.getData();
+
             if (product == null) {
                 throw new ResourceNotFoundException("Product not found with id: " + item.getProductId());
             }
-        });
 
-//        // 2) Validate inventory (stock check)
-//        request.getItems().forEach(item -> {
-//            InventoryResponse inventory = inventoryClient.getInventoryByProductId(item.getProductId());
-//
-//            if (inventory == null) {
-//                throw new ResourceNotFoundException("Inventory not found for productId: " + item.getProductId());
-//            }
-//
-//            if (inventory.getAvailableQuantity() < item.getQuantity()) {
-//                throw new IllegalArgumentException(
-//                        "Insufficient stock for productId: " + item.getProductId()
-//                );
-//            }
-//        });
-        // 2) Validate inventory (stock check) — null-safe
-        request.getItems().forEach(item -> {
-            ApiResponse<InventoryResponse> response =
+            ApiResponse<InventoryResponse> invApi =
                     inventoryClient.getInventoryByProductId(item.getProductId());
 
-            InventoryResponse inventory = response.getData();
-
+            InventoryResponse inventory = invApi.getData();
 
             if (inventory == null) {
                 throw new ResourceNotFoundException("Inventory not found for productId: " + item.getProductId());
             }
 
-            Integer available = inventory.getAvailableQuantity();
-            if (available == null) {
-                throw new IllegalStateException(
-                        "Inventory record for productId " + item.getProductId() + " has null availableQuantity");
-            }
-
-            if (available < item.getQuantity()) {
+            if (inventory.getAvailableQuantity() < item.getQuantity()) {
                 throw new IllegalArgumentException(
                         "Insufficient stock for productId: " + item.getProductId()
                 );
             }
+
+            // overwrite price from product-service (important)
+            item.setUnitPrice(product.getPrice());
         });
 
-
-        // 3) Calculate total amount
+        // Calculate total amount
         BigDecimal totalAmount = request.getItems().stream()
                 .map(i -> i.getUnitPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // 4) Build Order entity
+        // Create order
         Order order = Order.builder()
                 .userId(request.getUserId())
                 .totalAmount(totalAmount)
@@ -101,20 +81,23 @@ public class OrderServiceImpl implements OrderService {
                 .updatedAt(LocalDateTime.now())
                 .build();
 
-        // 5) Create OrderItems
+        // Create items
         List<OrderItem> items = request.getItems().stream()
-                .map(itemReq -> OrderItem.builder()
-                        .productId(itemReq.getProductId())
-                        .quantity(itemReq.getQuantity())
-                        .unitPrice(itemReq.getUnitPrice())
+                .map(i -> OrderItem.builder()
+                        .productId(i.getProductId())
+                        .quantity(i.getQuantity())
+                        .unitPrice(i.getUnitPrice())
                         .order(order)
-                        .build()
-                )
+                        .build())
                 .collect(Collectors.toList());
 
         order.setItems(items);
 
-        // 6) Save order + items (cascade)
+        // IMPORTANT => reduce stock BEFORE saving order
+        request.getItems().forEach(item -> {
+            inventoryClient.reduceStock(item.getProductId(), item.getQuantity());
+        });
+
         Order saved = orderRepository.save(order);
 
         return modelMapper.map(saved, OrderResponse.class);
@@ -122,7 +105,6 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderResponse getOrderById(Long id) {
-
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
@@ -131,7 +113,6 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<OrderResponse> getOrdersByUserId(Long userId) {
-
         return orderRepository.findByUserId(userId)
                 .stream()
                 .map(order -> modelMapper.map(order, OrderResponse.class))

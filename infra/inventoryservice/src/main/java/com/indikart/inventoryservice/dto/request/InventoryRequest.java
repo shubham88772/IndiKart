@@ -1,14 +1,12 @@
 package com.indikart.inventoryservice.dto.request;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import jakarta.validation.constraints.NotNull;
 
 @Data
 public class InventoryRequest {
-    @NotNull(message = "productId is required")
+    @NotNull
     private Long productId;
-    @NotNull(message = "availableQuantity is required")
-    @Min(value = 0, message = "availableQuantity must be >= 0")
-    private int availableQuantity;
+    @NotNull
+    private Integer availableQuantity;
 }

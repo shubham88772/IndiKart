@@ -2,7 +2,6 @@ package com.indikart.inventoryservice.service;
 
 import com.indikart.inventoryservice.dto.request.InventoryRequest;
 import com.indikart.inventoryservice.dto.response.InventoryResponse;
-
 import java.util.List;
 
 public interface InventoryService {
@@ -12,6 +11,5 @@ public interface InventoryService {
     InventoryResponse update(Long id, InventoryRequest request);
     void delete(Long id);
     InventoryResponse getByProductId(Long productId);
-
-
+    InventoryResponse reduceStock(Long productId, Integer quantity);
 }
