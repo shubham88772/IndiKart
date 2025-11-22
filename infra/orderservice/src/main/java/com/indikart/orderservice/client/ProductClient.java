@@ -6,8 +6,9 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "product-service", url = "${clients.product.url:http://localhost:8081/api/v1/products}")
+@FeignClient(name = "product-service")
 public interface ProductClient {
-    @GetMapping("/{id}")
-    ApiResponse<ProductResponse> getProductById(@PathVariable("id") Long id);
+
+    @GetMapping("/api/v1/products/{id}")
+    ApiResponse<ProductResponse> getProductById(@PathVariable Long id);
 }

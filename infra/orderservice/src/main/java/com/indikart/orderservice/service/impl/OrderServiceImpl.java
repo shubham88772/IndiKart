@@ -1,10 +1,10 @@
 package com.indikart.orderservice.service.impl;
-
 import com.indikart.orderservice.client.InventoryClient;
 import com.indikart.orderservice.client.ProductClient;
 import com.indikart.orderservice.dto.external.InventoryResponse;
 import com.indikart.orderservice.dto.external.ProductResponse;
 import com.indikart.orderservice.dto.request.CreateOrderRequest;
+import com.indikart.orderservice.dto.request.OrderItemRequest;
 import com.indikart.orderservice.dto.response.ApiResponse;
 import com.indikart.orderservice.dto.response.OrderResponse;
 import com.indikart.orderservice.entity.Order;
@@ -30,7 +30,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final ModelMapper modelMapper;
 
-    // Feign Clients
     private final ProductClient productClient;
     private final InventoryClient inventoryClient;
 
@@ -38,41 +37,50 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
 
-        // Validate items + fetch product + inventory
-        request.getItems().forEach(item -> {
+        //  Validate products exist in Product Service
+        for (OrderItemRequest item : request.getItems()) {
 
-            ApiResponse<ProductResponse> productApi = productClient.getProductById(item.getProductId());
-            ProductResponse product = productApi.getData();
+            ApiResponse<ProductResponse> response = productClient.getProductById(item.getProductId());
+            ProductResponse product = response.getData();
 
             if (product == null) {
                 throw new ResourceNotFoundException("Product not found with id: " + item.getProductId());
             }
+        }
 
-            ApiResponse<InventoryResponse> invApi =
+        //  Validate inventory and reduce stock
+        for (OrderItemRequest item : request.getItems()) {
+
+            ApiResponse<InventoryResponse> invResponse =
                     inventoryClient.getInventoryByProductId(item.getProductId());
 
-            InventoryResponse inventory = invApi.getData();
+            InventoryResponse inventory = invResponse.getData();
 
             if (inventory == null) {
-                throw new ResourceNotFoundException("Inventory not found for productId: " + item.getProductId());
+                throw new ResourceNotFoundException(
+                        "Inventory not found for productId: " + item.getProductId());
             }
 
             if (inventory.getAvailableQuantity() < item.getQuantity()) {
                 throw new IllegalArgumentException(
-                        "Insufficient stock for productId: " + item.getProductId()
-                );
+                        "Insufficient stock for productId: " + item.getProductId());
             }
 
-            // overwrite price from product-service (important)
-            item.setUnitPrice(product.getPrice());
-        });
+            // Reduce stock
+            ApiResponse<InventoryResponse> reducedResp =
+                    inventoryClient.reduceStock(item.getProductId(), item.getQuantity());
 
-        // Calculate total amount
+            if (reducedResp.getData() == null) {
+                throw new IllegalStateException("Failed to reduce stock for productId: " + item.getProductId());
+            }
+        }
+
+        //  Calculate total amount
         BigDecimal totalAmount = request.getItems().stream()
                 .map(i -> i.getUnitPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Create order
+        //  Create Order entity
         Order order = Order.builder()
                 .userId(request.getUserId())
                 .totalAmount(totalAmount)
@@ -81,7 +89,7 @@ public class OrderServiceImpl implements OrderService {
                 .updatedAt(LocalDateTime.now())
                 .build();
 
-        // Create items
+        //  Create Order Items
         List<OrderItem> items = request.getItems().stream()
                 .map(i -> OrderItem.builder()
                         .productId(i.getProductId())
@@ -93,11 +101,7 @@ public class OrderServiceImpl implements OrderService {
 
         order.setItems(items);
 
-        // IMPORTANT => reduce stock BEFORE saving order
-        request.getItems().forEach(item -> {
-            inventoryClient.reduceStock(item.getProductId(), item.getQuantity());
-        });
-
+        //  Save order
         Order saved = orderRepository.save(order);
 
         return modelMapper.map(saved, OrderResponse.class);
@@ -105,10 +109,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderResponse getOrderById(Long id) {
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
-
-        return modelMapper.map(order, OrderResponse.class);
+        Order found = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + id));
+        return modelMapper.map(found, OrderResponse.class);
     }
 
     @Override
